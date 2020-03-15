@@ -34,6 +34,12 @@ heavyMassEstimator::heavyMassEstimator(const TLorentzVector& lep1_lorentz, const
         bool simulation, bool PUsample, int ievent, bool weightfromonshellnupt_func, bool weightfromonshellnupt_hist, bool weightfromonoffshellWmass_hist,
         int iterations, const std::string& RefPDFfile, bool useMET, int bjetrescaleAlgo, int metcorrection, int verbose
 	)
+  : hmetree_(nullptr)
+  , heavyMassEstimator_h2Mass_(nullptr)
+  , heavyMassEstimator_h2Massweight1_(nullptr)
+  , heavyMassEstimator_h2Massweight4_(nullptr)
+  , file_(nullptr)
+  , rnd_(nullptr)
 {
 
 
@@ -102,7 +108,7 @@ heavyMassEstimator::heavyMassEstimator(const TLorentzVector& lep1_lorentz, const
    ss << "hmetree_" << iev_;
    const std::string name(ss.str());
    //if (writehmetree_) hmetree_ = fs->make<TTree>(name.c_str(), name.c_str());
-   if (not writehmetree_) hmetree_ = new TTree(name.c_str(), name.c_str());
+   if (writehmetree_) hmetree_ = new TTree(name.c_str(), name.c_str());
 
    std::stringstream histss;
    std::stringstream histweight1ss;
@@ -116,7 +122,7 @@ heavyMassEstimator::heavyMassEstimator(const TLorentzVector& lep1_lorentz, const
    heavyMassEstimator_h2Mass_ = new TH1F(histname.c_str(),histname.c_str(), 3800, 200, 4000);
    heavyMassEstimator_h2Massweight1_ = new TH1F(histweight1name.c_str(),histweight1name.c_str(), 3800, 200, 4000);
    heavyMassEstimator_h2Massweight4_ = new TH1F(histweight4name.c_str(),histweight4name.c_str(), 3800, 200, 4000);
-   initTree(hmetree_);
+   if (writehmetree_) initTree(hmetree_);
    
    b1rescalefactor_ = 1;
    b2rescalefactor_ = 1;
@@ -149,7 +155,8 @@ heavyMassEstimator::~heavyMassEstimator(){
 
   //delete file_ref;
   delete file_;
-  if (not writehmetree_) delete hmetree_;
+  delete rnd_;
+  delete hmetree_;
   delete heavyMassEstimator_h2Mass_;
   delete heavyMassEstimator_h2Massweight1_;
   delete heavyMassEstimator_h2Massweight4_; 
@@ -179,7 +186,7 @@ heavyMassEstimator::runheavyMassEstimator(){//should not include any gen level i
   //PU0:14.8,  PU40:25.2
   float met_sigma = (PUsample_? 25.2:14.8);
   //std::cout <<(PUsample_?" PUsample ":"Not PUsample ")<< " met_sigma "<< met_sigma << std::endl;
-  //hmetree_->SetDebug(100,0,9999999);
+  //if (writehmetree_) hmetree_->SetDebug(100,0,9999999);
   //int count = 100000;
   bool validrun = false;
   eta_mean_=0;
@@ -340,7 +347,7 @@ heavyMassEstimator::runheavyMassEstimator(){//should not include any gen level i
     }
     //       nu_offshellW_lorentz_= NULL; 
     for (int j = 0; j < 4; j++){
-	//  int fill = hmetree_->Fill();
+	//if ( writehmetree_ ) hmetree_->Fill();
 	if (!solution[j])  continue;
 	// reassign muons LorentzVector
 	if (simulation_){
@@ -480,8 +487,8 @@ heavyMassEstimator::runheavyMassEstimator(){//should not include any gen level i
 	  h2tohh_Phi_ = 0;
 	}
 
-	//	printheavyMassEstimatorresult();
-	//       	hmetree_->Fill();
+	//printheavyMassEstimatorresult();
+	//if ( writehmetree_ ) hmetree_->Fill();
 	if (weight1_<=0.0) continue;
 	heavyMassEstimator_h2Mass_->Fill(h2tohh_Mass_, weight_);
 	heavyMassEstimator_h2Massweight1_->Fill(h2tohh_Mass_, weight1_);
