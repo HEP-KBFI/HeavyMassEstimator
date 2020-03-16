@@ -179,9 +179,12 @@ int main(int argc, char *argv[])
 	}
 
 
-	heavyMassEstimator hme(evlist[ievent].lep1_p4, evlist[ievent].lep2_p4, evlist[ievent].b1jet_p4, evlist[ievent].b2jet_p4, evlist[ievent].totjets_p4, evlist[ievent].met_p4, 
-	    PUSample, ievent, weightfromonshellnupt_func, weightfromonshellnupt_hist, weightfromonoffshellWmass_hist,
+	heavyMassEstimator hme(PUSample, weightfromonshellnupt_func, weightfromonshellnupt_hist, weightfromonoffshellWmass_hist,
 	    iterations, RefPDFfile, useMET, bjetrescaleAlgo, metcorrection);
+        hme.set_inputs(evlist[ievent].lep1_p4, evlist[ievent].lep2_p4, 
+            evlist[ievent].b1jet_p4, evlist[ievent].b2jet_p4, 
+            evlist[ievent].totjets_p4, evlist[ievent].met_p4, 
+	    ievent);
 	bool runheavyMassEstimatorok = hme.runheavyMassEstimator();
 	if (runheavyMassEstimatorok) {
 	  //heavyMassEstimatortree =  (hme.getheavyMassEstimatorTree())->CloneTree();

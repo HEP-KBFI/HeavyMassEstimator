@@ -12,82 +12,27 @@
 #include <time.h>       /* time */
 
 //constructor
-heavyMassEstimator::heavyMassEstimator(const TLorentzVector& lep1_lorentz, const TLorentzVector& lep2_lorentz, const TLorentzVector& b1jet_lorentz, const TLorentzVector& b2jet_lorentz,
-	const TLorentzVector& totjets_lorentz, const TLorentzVector& met_lorentz, 
-        bool PUsample, int ievent, bool weightfromonshellnupt_func, bool weightfromonshellnupt_hist, bool weightfromonoffshellWmass_hist,
-        int iterations, const std::string& RefPDFfile, bool useMET, int bjetrescaleAlgo, int metcorrection, int verbose
-	):
-    heavyMassEstimator(lep1_lorentz, lep2_lorentz, b1jet_lorentz, b2jet_lorentz, totjets_lorentz, met_lorentz, 
-	NULL, NULL, NULL, NULL, NULL, -1, false, 
-	PUsample, ievent, weightfromonshellnupt_func, weightfromonshellnupt_hist, weightfromonoffshellWmass_hist, 
-	iterations, RefPDFfile, useMET, bjetrescaleAlgo, metcorrection, verbose)
-
-{
-
-}
-
-
-//constructor
-heavyMassEstimator::heavyMassEstimator(const TLorentzVector& lep1_lorentz, const TLorentzVector& lep2_lorentz, const TLorentzVector& b1jet_lorentz, const TLorentzVector& b2jet_lorentz,
-	const TLorentzVector& totjets_lorentz, const TLorentzVector& met_lorentz, const TLorentzVector* nu1_lorentz, const TLorentzVector* nu2_lorentz,
-	const TLorentzVector* b_genp_lorentz, const TLorentzVector* bbar_genp_lorentz, const TLorentzVector* h2_lorentz, int onshellMarker,// simulation only
-        bool simulation, bool PUsample, int ievent, bool weightfromonshellnupt_func, bool weightfromonshellnupt_hist, bool weightfromonoffshellWmass_hist,
-        int iterations, const std::string& RefPDFfile, bool useMET, int bjetrescaleAlgo, int metcorrection, int verbose
-	)
+heavyMassEstimator::heavyMassEstimator(bool PUsample, bool weightfromonshellnupt_func, bool weightfromonshellnupt_hist, bool weightfromonoffshellWmass_hist,
+        int iterations, const std::string& RefPDFfile, bool useMET, int bjetrescaleAlgo, int metcorrection, int verbose)
   : hmetree_(nullptr)
   , heavyMassEstimator_h2Mass_(nullptr)
   , heavyMassEstimator_h2Massweight1_(nullptr)
   , heavyMassEstimator_h2Massweight4_(nullptr)
   , file_(nullptr)
+  , wmasshist_(nullptr)
+  , onoffshellWmass_hist_(nullptr)
+  , onshellnupt_hist_(nullptr)
+  , bjetrescalec1_hist_(nullptr)
+  , bjetrescalec2_hist_(nullptr)
   , rnd_(nullptr)
 {
 
-
    heavyMassEstimatordebug_=false;
    if (heavyMassEstimatordebug_) std::cout <<" heavyMassEstimator::Debug::1 "<< std::endl;
-   hme_lep1_lorentz_ = lep1_lorentz;
-   hme_lep2_lorentz_ = lep2_lorentz;
-   hme_b1jet_lorentz_ = b1jet_lorentz;
-   hme_b2jet_lorentz_ = b2jet_lorentz;
-   hme_totjets_lorentz_ = totjets_lorentz;
-   hme_bjets_lorentz_ = b1jet_lorentz + b2jet_lorentz;
-   hmemet_vec2_ = TVector2(met_lorentz.Px(),met_lorentz.Py());
 
-   //std::cout <<" lep1 lorentz "; lep1_lorentz.Print();
-   //std::cout <<" b1 jet lorentz "; b1jet_lorentz.Print();
-   //std::cout <<" b1 gen lorentz "; b_genp_lorentz.Print();
-   simulation_ = simulation;
    PUsample_ = PUsample;
-	
-   if (heavyMassEstimatordebug_)  std::cout <<(simulation_? "in heavyMassEstimator simulation is true ":" in heavyMassEstimator simulation is false ")<< std::endl;	
-   onshellMarker_ = onshellMarker;
-   if (simulation_){
-        assert(nu1_lorentz && nu2_lorentz && b_genp_lorentz && bbar_genp_lorentz && h2_lorentz);
-	nu1_lorentz_true_ = *nu1_lorentz;
-   	nu2_lorentz_true_ = *nu2_lorentz;
-        
-        
-        if (onshellMarker_ == 1){
-        	onshellW_lorentz_true_ = nu1_lorentz_true_ + hme_lep1_lorentz_;
-        	offshellW_lorentz_true_ = nu2_lorentz_true_ + hme_lep2_lorentz_;
-        }
-        else if (onshellMarker_ ==2 ){
-        	offshellW_lorentz_true_ = nu1_lorentz_true_ + hme_lep1_lorentz_;
-        	onshellW_lorentz_true_ = nu2_lorentz_true_ + hme_lep2_lorentz_;
-	} 
-        else std::cout <<" onshellMarker input error"  << std::endl;
-
-        htoWW_lorentz_true_ = offshellW_lorentz_true_ + onshellW_lorentz_true_;
-        h2tohh_lorentz_true_ = *h2_lorentz; 
-	b1_lorentz_ = *b_genp_lorentz;
-        b2_lorentz_ = *bbar_genp_lorentz;
-   	htoBB_lorentz_true_ = *b_genp_lorentz + *bbar_genp_lorentz;
-	ideal_met_lorentz_.SetXYZM(nu1_lorentz_true_.Px()+nu2_lorentz_true_.Px(),nu1_lorentz_true_.Py()+nu2_lorentz_true_.Py(),0,0);
-   }
-   
 
    verbose_ = verbose; 
-   iev_ = ievent;
 
    weightfromonshellnupt_func_ = weightfromonshellnupt_func;
    weightfromonshellnupt_hist_ = weightfromonshellnupt_hist;
@@ -99,17 +44,7 @@ heavyMassEstimator::heavyMassEstimator(const TLorentzVector& lep1_lorentz, const
    metcorrection_ = metcorrection;//0.no correction; 1. simple rescale, 2.elaborate rescale, -1.ideal case
    bjetrescale_ = bjetrescaleAlgo;//0.no rescale; 1.simple rescale; 2.elaborate rescale, -1.ideal case
    writehmetree_ = false;
-
-   //TFile filetest(RefPDFfile_.c_str(),"READ");
-   //file_ref = filetest;
    
-   //writehmetree_ = false;
-   std::stringstream ss;
-   ss << "hmetree_" << iev_;
-   const std::string name(ss.str());
-   //if (writehmetree_) hmetree_ = fs->make<TTree>(name.c_str(), name.c_str());
-   if (writehmetree_) hmetree_ = new TTree(name.c_str(), name.c_str());
-
    std::stringstream histss;
    std::stringstream histweight1ss;
    std::stringstream histweight4ss;
@@ -122,24 +57,28 @@ heavyMassEstimator::heavyMassEstimator(const TLorentzVector& lep1_lorentz, const
    heavyMassEstimator_h2Mass_ = new TH1F(histname.c_str(),histname.c_str(), 3800, 200, 4000);
    heavyMassEstimator_h2Massweight1_ = new TH1F(histweight1name.c_str(),histweight1name.c_str(), 3800, 200, 4000);
    heavyMassEstimator_h2Massweight4_ = new TH1F(histweight4name.c_str(),histweight4name.c_str(), 3800, 200, 4000);
-   if (writehmetree_) initTree(hmetree_);
    
-   b1rescalefactor_ = 1;
-   b2rescalefactor_ = 1;
-   rescalec1_ = 1;
-   rescalec2_ = 1;
-   
-   nu_onshellW_lorentz_ = TLorentzVector();
-   nu_offshellW_lorentz_ = TLorentzVector();
-   offshellW_lorentz_ = TLorentzVector();
-   onshellW_lorentz_ = TLorentzVector();
-   htoWW_lorentz_ = TLorentzVector();
-   htoBB_lorentz_ = hme_bjets_lorentz_;
-   h2tohh_lorentz_ = TLorentzVector();
-   met_vec2_ = TVector2(hmemet_vec2_.Px(), hmemet_vec2_.Py());
-   //printTrueLorentz(); 
    file_ = TFile::Open(RefPDFfile_.c_str(),"READ");
+   wmasshist_ = readoutonshellWMassPDF(); 
+   onoffshellWmass_hist_ = readoutonoffshellWMassPDF(); 
+   onshellnupt_hist_ = readoutonshellnuptPDF(); 
+   bjetrescalec1_hist_ = readoutbjetrescalec1PDF(); 
+   bjetrescalec2_hist_ = readoutbjetrescalec2PDF(); 
+   //std::cout <<" rescale priori distribution 1" << std::endl;
+   //std::cout <<" onshellnupt max content " <<onshellnupt_hist_->GetBinContent(onshellnupt_hist_->GetMaximumBin()) << std::endl;
+   (const_cast<TH1F*>(onshellnupt_hist_))->Scale(1.0/onshellnupt_hist_->GetBinContent(onshellnupt_hist_->GetMaximumBin()));
+   (const_cast<TH2F*>(onoffshellWmass_hist_))->Scale(1.0/onoffshellWmass_hist_->GetBinContent(onoffshellWmass_hist_->GetMaximumBin()));
+   (const_cast<TH1F*>(bjetrescalec1_hist_))->Scale(1.0/bjetrescalec1_hist_->GetBinContent(bjetrescalec1_hist_->GetMaximumBin()));
+   (const_cast<TH1F*>(bjetrescalec2_hist_))->Scale(1.0/bjetrescalec2_hist_->GetBinContent(bjetrescalec2_hist_->GetMaximumBin()));
+   //replace above by normalization
+   //(const_cast<TH1F*>(onshellnupt_hist_))->Scale(1.0/onshellnupt_hist->GetBinContent(onshellnupt_hist_->GetMaximumBin()));
+   //(const_cast<TH1F*>(onoffshellWmass_hist_))->Scale(1.0/onoffshellWmass_hist->GetBinContent(onoffshellWmass_hist_->GetMaximumBin()));
+   //(const_cast<TH1F*>(bjetrescalec2_hist_))->Scale(1.0/bjetrescalec2_hist_->GetBinContent(bjetrescalec2_hist_->GetMaximumBin()));
+   //std::cout <<" rescale priori distribution 2" << std::endl;
+   //file_->Close();
+
    rnd_ = new TRandom3();
+
    if (heavyMassEstimatordebug_) std::cout <<" heavyMassEstimator::Debug::2 "<< std::endl;
 }
 
@@ -153,17 +92,118 @@ heavyMassEstimator::heavyMassEstimator(){
 //deconstructor
 heavyMassEstimator::~heavyMassEstimator(){
 
-  //delete file_ref;
-  delete file_;
-  delete rnd_;
   delete hmetree_;
   delete heavyMassEstimator_h2Mass_;
   delete heavyMassEstimator_h2Massweight1_;
-  delete heavyMassEstimator_h2Massweight4_; 
+  delete heavyMassEstimator_h2Massweight4_;
+  delete wmasshist_;
+  delete onoffshellWmass_hist_;
+  delete onshellnupt_hist_;
+  delete bjetrescalec1_hist_;
+  delete bjetrescalec2_hist_;
+  delete file_;
+  delete rnd_;
 
 }
 
+void 
+heavyMassEstimator::set_inputs(const TLorentzVector& lep1_lorentz, const TLorentzVector& lep2_lorentz, 
+        const TLorentzVector& b1jet_lorentz, const TLorentzVector& b2jet_lorentz,
+	const TLorentzVector& totjets_lorentz, const TLorentzVector& met_lorentz, 
+        int ievent)
+{
 
+  set_inputs(lep1_lorentz, lep2_lorentz, 
+    b1jet_lorentz, b2jet_lorentz, 
+    totjets_lorentz, met_lorentz, 
+    NULL, NULL, 
+    NULL, NULL, 
+    NULL, 
+    -1, 
+    false,
+    ievent);
+
+}
+
+void 
+heavyMassEstimator::set_inputs(const TLorentzVector& lep1_lorentz, const TLorentzVector& lep2_lorentz, 
+        const TLorentzVector& b1jet_lorentz, const TLorentzVector& b2jet_lorentz,
+	const TLorentzVector& totjets_lorentz, const TLorentzVector& met_lorentz, 
+        const TLorentzVector* nu1_lorentz, const TLorentzVector* nu2_lorentz,
+	const TLorentzVector* b_genp_lorentz, const TLorentzVector* bbar_genp_lorentz, 
+        const TLorentzVector* h2_lorentz, 
+        int onshellMarker, // simulation only
+        bool simulation, 
+        int ievent)
+{
+  hme_lep1_lorentz_ = lep1_lorentz;
+  hme_lep2_lorentz_ = lep2_lorentz;
+  hme_b1jet_lorentz_ = b1jet_lorentz;
+  hme_b2jet_lorentz_ = b2jet_lorentz;
+  hme_totjets_lorentz_ = totjets_lorentz;
+  hme_bjets_lorentz_ = b1jet_lorentz + b2jet_lorentz;
+  hmemet_vec2_ = TVector2(met_lorentz.Px(),met_lorentz.Py());
+
+  //std::cout <<" lep1 lorentz "; lep1_lorentz.Print();
+  //std::cout <<" b1 jet lorentz "; b1jet_lorentz.Print();
+  //std::cout <<" b1 gen lorentz "; b_genp_lorentz.Print();
+  simulation_ = simulation;
+
+  onshellMarker_ = onshellMarker;
+  if (simulation_){
+    assert(nu1_lorentz && nu2_lorentz && b_genp_lorentz && bbar_genp_lorentz && h2_lorentz); 
+    nu1_lorentz_true_ = *nu1_lorentz;
+    nu2_lorentz_true_ = *nu2_lorentz;
+        
+    if (onshellMarker_ == 1){
+      onshellW_lorentz_true_ = nu1_lorentz_true_ + hme_lep1_lorentz_;
+      offshellW_lorentz_true_ = nu2_lorentz_true_ + hme_lep2_lorentz_;
+    }
+    else if (onshellMarker_ ==2 ){
+      offshellW_lorentz_true_ = nu1_lorentz_true_ + hme_lep1_lorentz_;
+      onshellW_lorentz_true_ = nu2_lorentz_true_ + hme_lep2_lorentz_;
+    } 
+    else std::cout <<" onshellMarker input error"  << std::endl;
+
+    htoWW_lorentz_true_ = offshellW_lorentz_true_ + onshellW_lorentz_true_;
+    h2tohh_lorentz_true_ = *h2_lorentz; 
+    b1_lorentz_ = *b_genp_lorentz;
+    b2_lorentz_ = *bbar_genp_lorentz;
+    htoBB_lorentz_true_ = *b_genp_lorentz + *bbar_genp_lorentz;
+    ideal_met_lorentz_.SetXYZM(nu1_lorentz_true_.Px()+nu2_lorentz_true_.Px(),nu1_lorentz_true_.Py()+nu2_lorentz_true_.Py(),0,0);
+  }
+   
+  b1rescalefactor_ = 1;
+  b2rescalefactor_ = 1;
+  rescalec1_ = 1;
+  rescalec2_ = 1;
+
+  nu_onshellW_lorentz_ = TLorentzVector();
+  nu_offshellW_lorentz_ = TLorentzVector();
+  offshellW_lorentz_ = TLorentzVector();
+  onshellW_lorentz_ = TLorentzVector();
+  htoWW_lorentz_ = TLorentzVector();
+  htoBB_lorentz_ = hme_bjets_lorentz_;
+  h2tohh_lorentz_ = TLorentzVector();
+  met_vec2_ = TVector2(hmemet_vec2_.Px(), hmemet_vec2_.Py());
+  //printTrueLorentz(); 
+
+  heavyMassEstimator_h2Mass_->Reset();
+  heavyMassEstimator_h2Massweight1_->Reset();
+  heavyMassEstimator_h2Massweight4_->Reset();
+
+  if ( writehmetree_ ) {
+    delete hmetree_;
+    std::stringstream ss;
+    ss << "hmetree_" << iev_;
+    const std::string name(ss.str());
+    //hmetree_ = fs->make<TTree>(name.c_str(), name.c_str());
+    hmetree_ = new TTree(name.c_str(), name.c_str());
+    initTree(hmetree_);
+  }
+
+  runheavyMassEstimator();
+}
 
 
 //================================================================================================================
@@ -196,32 +236,13 @@ heavyMassEstimator::runheavyMassEstimator(){//should not include any gen level i
   rnd_->SetSeed(seed_+iev_);
   //TF1* wmasspdf = new TF1("wmasspdf","exp(x*7.87e-3+1.69)+603.47*exp(-0.5*((x-80.1)/2.0)**2)",50,90);
 
-
    if (heavyMassEstimatordebug_) std::cout <<" heavyMassEstimator::Debug::3  start runheavyMassEstimator() in heavyMassEstimator class "  << std::endl; 
    float nu_onshellW_pt =0;
    wmass_gen_ = 80.3;// initial value
    float step,random01;
-   TH1F* wmasshist = readoutonshellWMassPDF(); 
-   TH2F* onoffshellWmass_hist = readoutonoffshellWMassPDF(); 
-   TH1F* onshellnupt_hist = readoutonshellnuptPDF(); 
-   TH1F* bjetrescalec1_hist = readoutbjetrescalec1PDF(); 
-   TH1F* bjetrescalec2_hist = readoutbjetrescalec2PDF(); 
-   //std::cout <<" rescale priori distribution 1" << std::endl;
-   //std::cout <<" onshellnupt max content " <<onshellnupt_hist->GetBinContent(onshellnupt_hist->GetMaximumBin()) << std::endl;
-   onshellnupt_hist->Scale(1.0/onshellnupt_hist->GetBinContent(onshellnupt_hist->GetMaximumBin()));
-   onoffshellWmass_hist->Scale(1.0/onoffshellWmass_hist->GetBinContent(onoffshellWmass_hist->GetMaximumBin()));
-   bjetrescalec1_hist->Scale(1.0/bjetrescalec1_hist->GetBinContent(bjetrescalec1_hist->GetMaximumBin()));
-   bjetrescalec2_hist->Scale(1.0/bjetrescalec2_hist->GetBinContent(bjetrescalec2_hist->GetMaximumBin()));
-   //replace above by normalization
-   //onshellnupt_hist->Scale(1.0/onshellnupt_hist->GetBinContent(onshellnupt_hist->GetMaximumBin()));
-   //onoffshellWmass_hist->Scale(1.0/onoffshellWmass_hist->GetBinContent(onoffshellWmass_hist->GetMaximumBin()));
-   //bjetrescalec2_hist->Scale(1.0/bjetrescalec2_hist->GetBinContent(bjetrescalec2_hist->GetMaximumBin()));
-   //std::cout <<" rescale priori distribution 2" << std::endl;
-   
   // printTrueLorentz();
 
   for (int i = 0; i < iterations_ ; i++){
-
     eta_gen_ = rnd_->Uniform(-6,6); 
     phi_gen_ = rnd_->Uniform(-3.1415926, 3.1415926);
     //wmass_gen_ = rnd_->Gaus(80.385,0.015);
@@ -234,13 +255,13 @@ heavyMassEstimator::runheavyMassEstimator(){//should not include any gen level i
    	metpy_gen_ = 0;
 	}
     TVector2 met_gen = TVector2(metpx_gen_, metpy_gen_);
-    
+
     //generate onshell Wmass
     step = rnd_->Uniform(-4,4);
     //step = rnd_->Gaus(0,8);
     random01 = rnd_->Uniform(0,1);
     //wmass_gen_ = onshellWMassRandomWalk(wmass_gen_, step, random01);
-    wmass_gen_ = onshellWMassRandomWalk(wmass_gen_, step, random01, wmasshist);
+    wmass_gen_ = onshellWMassRandomWalk(wmass_gen_, step, random01, wmasshist_);
     if (bjetrescale_ ==1){
 	//type1 bjet correction
 	b1rescalefactor_ = 125/hme_bjets_lorentz_.M();
@@ -250,7 +271,7 @@ heavyMassEstimator::runheavyMassEstimator(){//should not include any gen level i
     }
     if (bjetrescale_ ==2){
 	//type2 bjet correction
-	rescalec1_ = bjetrescalec1_hist->GetRandom();
+	rescalec1_ = bjetrescalec1_hist_->GetRandom();
 	//std::cout <<" rescale c1 " << rescalec1 << std::endl;
 	bool hascorrection =  bjetsCorrection();
 	if (not hascorrection) continue;
@@ -281,7 +302,7 @@ heavyMassEstimator::runheavyMassEstimator(){//should not include any gen level i
     }
     else if ((metcorrection_-3) ==2 or metcorrection_==2){
 	//no bjet correction but does correct MET according to type2 bjet correction
-	rescalec1_ = bjetrescalec1_hist->GetRandom();
+	rescalec1_ = bjetrescalec1_hist_->GetRandom();
 	bool hascorrection = bjetsCorrection();//calculate b1rescalefactor_ b2rescalefactor_
 	if (not hascorrection) continue;
 	metCorrection(); 
@@ -293,7 +314,6 @@ heavyMassEstimator::runheavyMassEstimator(){//should not include any gen level i
 	//bjetsCorrection();
 	metCorrection(); 
     }
-    
 
     //std::cout <<" Met input px "<< hmemet_vec2_.Px() << " py "<< hmemet_vec2_.Py() <<" pt "<< hmemet_vec2_.Mod() <<std::endl;
     //std::cout <<" met before smearing metpx_gen " << met_vec2_.Px() <<" metpy_gen " << met_vec2_.Py() <<std::endl;
@@ -339,8 +359,6 @@ heavyMassEstimator::runheavyMassEstimator(){//should not include any gen level i
 	  solution[j] = nulorentz_offshellW(hme_totjets_lorentz_, mu_onshellW_lorentz_,
 		mu_offshellW_lorentz_, nu_onshellW_lorentz_,
 		nu_offshellW_lorentz_, j%2, hmass_gen_);
-
-
 
 	//std::cout << j << " nu_offshellW_eta " << nu_offshellW_lorentz_.Eta()<<" phi " << nu_offshellW_lorentz_.Phi() << std::endl; 
 	if (solution[j]) solutions++;
@@ -471,10 +489,10 @@ heavyMassEstimator::runheavyMassEstimator(){//should not include any gen level i
 	heavyMassEstimatormet_Phi_ = met_vec2_.Phi();
 
 	if (weightfromonshellnupt_func_) weight1_ = weightfromonshellnupt(nu_onshellW_pt); 
-	if (weightfromonshellnupt_hist_) weight1_ = weightfromhist(onshellnupt_hist, nu_onshellW_pt); 
-	if (weightfromonoffshellWmass_hist_) weight2_ = weightfromhist(onoffshellWmass_hist, wmass_gen_, offshellW_lorentz_.M()); 
-	if (weightfromonoffshellWmass_hist_) weight3_ = weightfromhist(onoffshellWmass_hist, wmass_gen_, offshellW_lorentz_.M(), false);
-	if (weightfrombjetrescalec1c2_hist_) weight4_ = weightfromhist(bjetrescalec2_hist, rescalec2_);
+	if (weightfromonshellnupt_hist_) weight1_ = weightfromhist(onshellnupt_hist_, nu_onshellW_pt); 
+	if (weightfromonoffshellWmass_hist_) weight2_ = weightfromhist(onoffshellWmass_hist_, wmass_gen_, offshellW_lorentz_.M()); 
+	if (weightfromonoffshellWmass_hist_) weight3_ = weightfromhist(onoffshellWmass_hist_, wmass_gen_, offshellW_lorentz_.M(), false);
+	if (weightfrombjetrescalec1c2_hist_) weight4_ = weightfromhist(bjetrescalec2_hist_, rescalec2_);
 	weight1_ = weight1_*weight_;
 	weight2_ = weight2_*weight1_;
 	weight3_ = weight1_*weight3_;
@@ -508,7 +526,7 @@ heavyMassEstimator::runheavyMassEstimator(){//should not include any gen level i
       }
 
   //std::cout <<"gFile get name "<< gFile->GetName() <<" gFile get options " << gFile->GetOption() << std::endl;
-  file_->Close();
+  //file_->Close();
   return validrun;
 }
 
@@ -857,22 +875,42 @@ heavyMassEstimator::genPhiFlat(){
   return phi;
 }
 
+//------------ method to load TH1F object from ROOT file -----------------------------
+const TH1F* loadHistogram1d(const TFile* file, const std::string& histName)
+{
+  const TH1F* hist = dynamic_cast<TH1F*>((const_cast<TFile*>(file))->Get(histName.data()));
+  assert(hist);
+  std::string histName_cloned = std::string(histName).append("_cloned");
+  const TH1F* hist_cloned = (TH1F*)hist->Clone(histName_cloned.data());
+  return hist_cloned;
+}
+
+//------------ method to load TH1F object from ROOT file -----------------------------
+const TH2F* loadHistogram2d(const TFile* file, const std::string& histName)
+{
+  const TH2F* hist = dynamic_cast<TH2F*>((const_cast<TFile*>(file))->Get(histName.data()));
+  assert(hist);
+  std::string histName_cloned = std::string(histName).append("_cloned");
+  const TH2F* hist_cloned = (TH2F*)hist->Clone(histName_cloned.data());
+  return hist_cloned;
+}
+
 //------------ method called to readout TH1F onshellWmasspdf from root file -----------------------------
 //
-TH1F*
+const TH1F*
 heavyMassEstimator::readoutonshellWMassPDF(){
 
-  TH1F* onshellWmasspdf = (TH1F*)file_->Get("onshellWmasspdf");
+  const TH1F* onshellWmasspdf = loadHistogram1d(file_, "onshellWmasspdf");
   return onshellWmasspdf;
 
 }
 
 //------------ method called to readout TH1F offshellWmasspdf from root file -----------------------------
 //
-TH1F*
+const TH1F*
 heavyMassEstimator::readoutoffshellWMassPDF(){
 
-  TH1F* offshellWmasspdf = (TH1F*)file_->Get("offshellWmasspdf");
+  const TH1F* offshellWmasspdf = loadHistogram1d(file_, "offshellWmasspdf");
   return offshellWmasspdf;
 
 }
@@ -880,55 +918,56 @@ heavyMassEstimator::readoutoffshellWMassPDF(){
 
 //------------ method called to readout TH2F onoffshellWmasspdf from root file -----------------------------
 //
-TH2F*
+const TH2F*
 heavyMassEstimator::readoutonoffshellWMassPDF(){
 
-  TH2F* onoffshellWmasspdf = (TH2F*)file_->Get("onoffshellWmasspdf");
+  const TH2F* onoffshellWmasspdf = loadHistogram2d(file_, "onoffshellWmasspdf");
   return onoffshellWmasspdf;
 
 }
 
 
-//------------ method called to readout TH1F onshellWmasspdf from root file -----------------------------
+//------------ method called to readout TH1F onshellnuptpdf from root file -----------------------------
 //
-TH1F*
+const TH1F*
 heavyMassEstimator::readoutonshellnuptPDF(){
 
-  TH1F* onshellnuptpdf = (TH1F*)file_->Get("onshellnuptpdf");
+  const TH1F* onshellnuptpdf = loadHistogram1d(file_, "onshellnuptpdf");
   return onshellnuptpdf;
 
 }
 
-//------------ method called to readout TH1F onshellWmasspdf from root file -----------------------------
+//------------ method called to readout TH1F bjetrescalec1pdf from root file -----------------------------
 //
-TH1F*
+const TH1F*
 heavyMassEstimator::readoutbjetrescalec1PDF(){
 
-  TH1F* bjetrescalec1pdf = PUsample_?(TH1F*)file_->Get("recobjetrescalec1pdfPU40"):(TH1F*)file_->Get("bjetrescalec1dR4pdf");
+  std::string histName = ( PUsample_ ) ? "recobjetrescalec1pdfPU40" : "bjetrescalec1dR4pdf"; 
+  const TH1F* bjetrescalec1pdf = loadHistogram1d(file_, histName);
   return bjetrescalec1pdf;
 
 }
 
-//------------ method called to readout TH1F onshellWmasspdf from root file -----------------------------
+//------------ method called to readout TH1F bjetrescalec2pdf from root file -----------------------------
 //
-TH1F*
+const TH1F*
 heavyMassEstimator::readoutbjetrescalec2PDF(){
 
-  TH1F* bjetrescalec2pdf = PUsample_?(TH1F*)file_->Get("recobjetrescalec2pdfPU40"):(TH1F*)file_->Get("bjetrescalec2dR4pdf");
+  std::string histName = ( PUsample_ ) ? "recobjetrescalec2pdfPU40" : "bjetrescalec2dR4pdf";
+  const TH1F* bjetrescalec2pdf = loadHistogram1d(file_, histName);
   return bjetrescalec2pdf;
 
 }
 
-//------------ method called to readout TH1F onshellWmasspdf from root file -----------------------------
+//------------ method called to readout TH2F bjetrescalec1c2pdf from root file -----------------------------
 //
-TH2F*
+const TH2F*
 heavyMassEstimator::readoutbjetrescalec1c2PDF(){
 
-  TH2F* bjetrescalec1c2pdf = (TH2F*)file_->Get("bjetrescalec1c2pdf");
+  const TH2F* bjetrescalec1c2pdf = loadHistogram2d(file_, "bjetrescalec1c2pdf");
   return bjetrescalec1c2pdf;
 
 }
-
 
 //------------ method to describe onshellW mass Probability density function ------------------------------
 //
@@ -970,7 +1009,7 @@ heavyMassEstimator::onshellWMassRandomWalk(float x0, float step, float random){
 //------------ use random walk to generate random onshellW mass accroding to wmass pdf --------------
 //
 float
-heavyMassEstimator::onshellWMassRandomWalk(float x0, float step, float random, TH1F* hist){
+heavyMassEstimator::onshellWMassRandomWalk(float x0, float step, float random, const TH1F* hist){
   float xmin = 50;
   float xmax = 90;
   //periodic boundary codition
@@ -989,10 +1028,8 @@ heavyMassEstimator::onshellWMassRandomWalk(float x0, float step, float random, T
   int binx1_1,binx1_2;
   double bincent0_1,bincont0_1;// center and content
   double bincent1_1,bincont1_1;
-
-  binx0_1 = hist->FindBin(x0);
-  binx1_1 = hist->FindBin(x1);
-
+  binx0_1 = (const_cast<TH1F*>(hist))->FindBin(x0);
+  binx1_1 = (const_cast<TH1F*>(hist))->FindBin(x1);
   if ((float)hist->GetBinCenter(binx0_1) < x0){
     binx0_2 = binx0_1+1;
   }
@@ -1016,6 +1053,7 @@ heavyMassEstimator::onshellWMassRandomWalk(float x0, float step, float random, T
   double w1 = (x1-bincent1_1)*(bincont1_1-hist->GetBinContent(binx1_2))/(bincent1_1-hist->GetBinCenter(binx1_2))+bincont1_1;
   //transition probability
   double w = w1/w0;
+
   //std::cout <<" initial " <<x0 <<" step " << step << " x1 "<< x1 << " transition probability " << w << " random " << random << std::endl;
   if (w >= 1.00) return x1;
   if (w < 1.00 && random < (float)w) return x1;
@@ -1027,22 +1065,22 @@ heavyMassEstimator::onshellWMassRandomWalk(float x0, float step, float random, T
 //---------- weight solution by a histogram --------------------------------------------------------
 //
 float
-heavyMassEstimator::weightfromhist(TH1F* hist, float x){
+heavyMassEstimator::weightfromhist(const TH1F* hist, float x){
   //hist should be scaled
 
   float weight = 0.0;
-  int bin1 = hist->FindBin(x);
+  int bin1 = (const_cast<TH1F*>(hist))->FindBin(x);
   //first make sure that x is within range
   if (bin1 == 0 || bin1 == hist->GetNbinsX()+1) return weight=0;
 
-  weight = hist->Interpolate(x);
+  weight = (const_cast<TH1F*>(hist))->Interpolate(x);
   return weight;
 }
 
 //---------- weight solution by a 2d histogram --------------------------------------------------------
 //
 float
-heavyMassEstimator::weightfromhist(TH2F* hist, float x, float y, bool whole){
+heavyMassEstimator::weightfromhist(const TH2F* hist, float x, float y, bool whole){
   //hist should be scaled
 
   float weight = 0.0;

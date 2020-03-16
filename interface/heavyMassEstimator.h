@@ -47,20 +47,24 @@ class heavyMassEstimator{
 
     public:
     //constructor
-    heavyMassEstimator(const TLorentzVector& lep1_lorentz, const TLorentzVector& lep2_lorentz, const TLorentzVector& b1jet_lorentz, const TLorentzVector& b2jet_lorentz, 
-	const TLorentzVector& totjets_lorentz, const TLorentzVector& met_lorentz, const TLorentzVector* nu1_lorentz, const TLorentzVector* nu2_lorentz,
-	const TLorentzVector* b_genp_lorentz, const TLorentzVector* bbar_genp_lorentz, const TLorentzVector* h2tohh_lorentz, int onshellMarker, bool simulation, bool PUsample,
-	int ievent, bool weightfromonshellnupt_func, bool weightfromonshellnupt_hist, bool weightfromonoffshellWmass_hist,
-        int iterations, const std::string& RefPDFfile, bool useMET, int bjetrescaleAlgo, int metcorrection, int verbose_=0
-	);
-    //constructor 
-    heavyMassEstimator(const TLorentzVector& lep1_lorentz, const TLorentzVector& lep2_lorentz, const TLorentzVector& b1jet_lorentz, const TLorentzVector& b2jet_lorentz, 
-	const TLorentzVector& totjets_lorentz, const TLorentzVector& met_lorentz,
-	bool PUsample, int ievent, bool weightfromonshellnupt_func, bool weightfromonshellnupt_hist, bool weightfromonoffshellWmass_hist,
-        int iterations, const std::string& RefPDFfile, bool useMET, int bjetrescaleAlgo, int metcorrection, int verbose=0
-	);
+    heavyMassEstimator(bool PUsample, bool weightfromonshellnupt_func, bool weightfromonshellnupt_hist, bool weightfromonoffshellWmass_hist,
+        int iterations, const std::string& RefPDFfile, bool useMET, int bjetrescaleAlgo, int metcorrection, int verbose=0);
     heavyMassEstimator();
     ~heavyMassEstimator();
+
+    void set_inputs(const TLorentzVector& lep1_lorentz, const TLorentzVector& lep2_lorentz, 
+        const TLorentzVector& b1jet_lorentz, const TLorentzVector& b2jet_lorentz, 
+	const TLorentzVector& totjets_lorentz, const TLorentzVector& met_lorentz, 
+        const TLorentzVector* nu1_lorentz, const TLorentzVector* nu2_lorentz, 
+        const TLorentzVector* b_genp_lorentz, const TLorentzVector* bbar_genp_lorentz, 
+        const TLorentzVector* h2tohh_lorentz, 
+        int onshellMarker, 
+        bool simulation, 
+        int ievent);
+    void set_inputs(const TLorentzVector& lep1_lorentz, const TLorentzVector& lep2_lorentz, 
+        const TLorentzVector& b1jet_lorentz, const TLorentzVector& b2jet_lorentz, 
+	const TLorentzVector& totjets_lorentz, const TLorentzVector& met_lorentz, 
+        int ievent);
 
     private:
       TTree* hmetree_;
@@ -68,6 +72,11 @@ class heavyMassEstimator{
       TH1F* heavyMassEstimator_h2Massweight1_;
       TH1F* heavyMassEstimator_h2Massweight4_;
       TFile* file_;
+      const TH1F* wmasshist_;
+      const TH2F* onoffshellWmass_hist_;
+      const TH1F* onshellnupt_hist_;
+      const TH1F* bjetrescalec1_hist_;
+      const TH1F* bjetrescalec2_hist_;
       TRandom* rnd_;
  
    //runheavyMassEstimator
@@ -108,21 +117,21 @@ class heavyMassEstimator{
           
     private:
       float onshellWMassRandomWalk(float x0, float step, float random);
-      float onshellWMassRandomWalk(float x0, float step, float random, TH1F* hist);
+      float onshellWMassRandomWalk(float x0, float step, float random, const TH1F* hist);
       float onshellWMassPDF(float wmass);
   
     private:
-      TH1F* readoutonshellWMassPDF();
-      TH1F* readoutoffshellWMassPDF();
-      TH2F* readoutonoffshellWMassPDF();
-      TH1F* readoutonshellnuptPDF();
-      TH1F* readoutbjetrescalec1PDF();
-      TH1F* readoutbjetrescalec2PDF();
-      TH2F* readoutbjetrescalec1c2PDF();
+      const TH1F* readoutonshellWMassPDF();
+      const TH1F* readoutoffshellWMassPDF();
+      const TH2F* readoutonoffshellWMassPDF();
+      const TH1F* readoutonshellnuptPDF();
+      const TH1F* readoutbjetrescalec1PDF();
+      const TH1F* readoutbjetrescalec2PDF();
+      const TH2F* readoutbjetrescalec1c2PDF();
  
     private:
-      float weightfromhist(TH1F* pdf, float x); 
-      float weightfromhist(TH2F* pdf, float x, float y, bool whole=true); 
+      float weightfromhist(const TH1F* pdf, float x); 
+      float weightfromhist(const TH2F* pdf, float x, float y, bool whole=true); 
       float weightfromonshellnupt(float nupt); 
    
     private:
