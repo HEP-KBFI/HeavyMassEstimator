@@ -188,6 +188,8 @@ heavyMassEstimator::set_inputs(const TLorentzVector& lep1_lorentz, const TLorent
   met_vec2_ = TVector2(hmemet_vec2_.Px(), hmemet_vec2_.Py());
   //printTrueLorentz(); 
 
+  iev_ = ievent;
+
   heavyMassEstimator_h2Mass_->Reset();
   heavyMassEstimator_h2Massweight1_->Reset();
   heavyMassEstimator_h2Massweight4_->Reset();
