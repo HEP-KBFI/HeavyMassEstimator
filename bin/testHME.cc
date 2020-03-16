@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
     }
     string RefPDFfile = std::string(cmssw_base).append("/src/hhAnalysis/Heavymassestimator/data/REFPDFPU40.root");//the root file contains histogram for weighting 
     
-    int iterations = 10000;
+    int iterations = 100000;
     bool useMET = true;//use MET or totjets_p4 to estimate kinematic sum of two nuetrino
     int bjetrescaleAlgo = 2;//jet correction
     int metcorrection = 5;//met correction
