@@ -236,9 +236,8 @@ heavyMassEstimator::runheavyMassEstimator(){//should not include any gen level i
   eta_rms_=1.403;
   //std::cout <<" time null " << time(NULL) << std::endl;
   //seed_ = time(NULL);
-  seed_ = hme_lep1_lorentz_.E()*hme_lep2_lorentz_.E();
-  gRandom->SetSeed(seed_+iev_);
-  rnd_->SetSeed(seed_ + iev_);
+  gRandom->SetSeed(iev_);
+  rnd_->SetSeed(iev_);
   //TF1* wmasspdf = new TF1("wmasspdf","exp(x*7.87e-3+1.69)+603.47*exp(-0.5*((x-80.1)/2.0)**2)",50,90);
 
    if (heavyMassEstimatordebug_) std::cout <<" heavyMassEstimator::Debug::3  start runheavyMassEstimator() in heavyMassEstimator class "  << std::endl; 
